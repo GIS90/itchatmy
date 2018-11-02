@@ -32,9 +32,17 @@ IS_UNIQUE = False
 @itchat.msg_register([TEXT, SHARING], isGroupChat=True)
 def group_text_reply(msg):
     print json.dumps(msg)
+    to_user_name = msg.get('ToUserName')
+    form_nick_name = msg.get('ActualNickName')
+    form_user_name = msg.get('FromUserName')
+
+    chat = get_chatroom_by_params(nick_name=u'宝龙山&amp;保康！.宝龙山&amp;保康')
+    chat_id = chat.get('UserName')
     is_at = msg.get('isAt') if msg else False
-    if is_at:
-        reply_by_ai(msg)
+
+    if is_at or to_user_name == chat_id or form_user_name == chat_id:
+        rely_msg_text = '@%s %s' % (form_nick_name, reply_by_ai(msg))
+        itchat.send(rely_msg_text, toUserName=chat_id)
 
 
 @itchat.msg_register([TEXT, MAP, CARD, NOTE, SHARING])
@@ -52,6 +60,7 @@ def handler_text_msg(msg):
     _send_3_chatroom()
 
     form_user_name = msg.get('FromUserName')
+    # judge is or not me
     search_friend_params = {"me": True}
     me = search_friend_by_params(params=search_friend_params)
     me_user_name = me.get('UserName')
@@ -66,9 +75,10 @@ def handler_text_msg(msg):
     is_ok = is_bulid_chat(form_user_name)
     if not is_ok:
         rely_msg_text = '主人不在，先由小6陪您聊一会吧！😄'
-        itchat.send(rely_msg_text, toUserName=form_user_name)
     else:
-        reply_by_ai(msg)
+        rely_msg_text = reply_by_ai(msg)
+
+    itchat.send(rely_msg_text, toUserName=form_user_name)
 
 
 def _get_unique():
@@ -234,13 +244,12 @@ def reply_by_ai(msg):
         if resp.status_code == 200 and code >= 10000:
             result = resp_json.get('results')[0]
             rely_msg_text = result.get('values').get('text')
-            itchat.send(rely_msg_text, toUserName=user_name)
         else:
             rely_msg_text = "小6好像出问题了, 正在通知主人回来抢修"
-            itchat.send(rely_msg_text, toUserName=user_name)
     except:
         rely_msg_text = "小6没有找到答案😭😭😭, 尝试换个话题吧"
-        itchat.send(rely_msg_text, toUserName=user_name)
+    else:
+        return rely_msg_text
 
 
 def run(is_unique=False):
