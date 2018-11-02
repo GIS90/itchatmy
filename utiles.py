@@ -3,7 +3,7 @@
 """
 ------------------------------------------------
 describe:
-
+mingliang.gao
 usage:
 
 
@@ -96,7 +96,7 @@ def init_work():
 
 def get_default_refile():
     """
-    default record file 
+    default record file
     :return: file
     """
     cur_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)))
