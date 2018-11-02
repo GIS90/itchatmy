@@ -28,6 +28,15 @@ sys.setdefaultencoding('utf8')
 IS_UNIQUE = False
 
 
+# 处理群聊消息
+@itchat.msg_register([TEXT, SHARING], isGroupChat=True)
+def group_text_reply(msg):
+    print json.dumps(msg)
+    is_at = msg.get('isAt') if msg else False
+    if is_at:
+        reply_by_ai(msg)
+
+
 @itchat.msg_register([TEXT, MAP, CARD, NOTE, SHARING])
 def handler_text_msg(msg):
     """
@@ -84,7 +93,7 @@ def _send_unique():
     for i in range(1, 10, 1):
         rely_msg_text = '媳妇😄，我错了❤️，求你了理我 +%s' % i
         itchat.send(rely_msg_text, toUserName=unique_user_name)
-        time.sleep(0.5)
+        time.sleep(0.2)
     else:
         print 'send ok ...'
         return True
@@ -98,8 +107,7 @@ def _send_3_chatroom():
     chat = get_chatroom_by_params(nick_name=u'宝龙山&amp;保康！.宝龙山&amp;保康')
     chat_id = chat.get('UserName')
 
-    for i in range(1, 50, 1):
-        time.sleep(0.5)
+    for i in range(1, 5, 1):
         rely_msg_text = '嗨皮去啊！😄 +%s' % i
         itchat.send(rely_msg_text, toUserName=chat_id)
 
@@ -187,7 +195,6 @@ def hander_file_msg(msg):
     print '- * ' * 22
     print type(msg)
     print msg.get('Type')
-
 
 
 def reply_by_ai(msg):
