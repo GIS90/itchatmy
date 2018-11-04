@@ -26,23 +26,55 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 IS_UNIQUE = False
+IS_DEBUG = False
 
 
 # 处理群聊消息
-@itchat.msg_register([TEXT, SHARING], isGroupChat=True)
+@itchat.msg_register([TEXT, SHARING, SYSTEM], isGroupChat=True)
 def group_text_reply(msg):
     print json.dumps(msg)
-    to_user_name = msg.get('ToUserName')
+
+    monitor_chats = [u'Me',
+                     # u'家族群',
+                     # u'宝龙山&amp;保康！.宝龙山&amp;保康',
+                     u'媳妇私房钱专用']
+    chat_id_list = list()
+    for chat in monitor_chats:
+        if not chat:
+            continue
+
+        unique_chat = get_chatroom_by_params(nick_name=chat)
+        unique_chat_id = unique_chat.get('UserName')
+        chat_id_list.append(unique_chat_id) if unique_chat_id else None
+    else:
+        to_user_name = msg.get('ToUserName')
+        from_user_name = msg.get('FromUserName')
+        is_at = msg.get('isAt') if msg else False
+        if is_at or to_user_name in chat_id_list:
+            _build_group_auto_reply(msg=msg, chat=to_user_name)
+        if IS_DEBUG and from_user_name in chat_id_list:
+            print '*' * 100
+            print IS_DEBUG
+            _build_group_auto_reply(msg=msg, chat=to_user_name)
+
+
+def _build_group_auto_reply(msg, chat):
+    """
+    build in group auto reply
+    :param msg: message object wx
+    :param chat: chat user name
+    :return: None
+    """
+    if not msg or not chat:
+        return
+
     form_nick_name = msg.get('ActualNickName')
-    form_user_name = msg.get('FromUserName')
-
-    chat = get_chatroom_by_params(nick_name=u'宝龙山&amp;保康！.宝龙山&amp;保康')
-    chat_id = chat.get('UserName')
-    is_at = msg.get('isAt') if msg else False
-
-    if is_at or to_user_name == chat_id or form_user_name == chat_id:
-        rely_msg_text = '@%s %s' % (form_nick_name, reply_by_ai(msg))
-        itchat.send(rely_msg_text, toUserName=chat_id)
+    if not form_nick_name:
+        from_user_name = msg.get('FromUserName')
+        from_user = search_friend_by_params(user_name=from_user_name)
+        form_nick_name = from_user.get('NickName')
+    rely_msg_text = '@%s %s' % (form_nick_name, reply_by_ai(msg))
+    itchat.send(rely_msg_text, toUserName=chat)
 
 
 @itchat.msg_register([TEXT, MAP, CARD, NOTE, SHARING])
@@ -56,8 +88,8 @@ def handler_text_msg(msg):
     print msg.get('Type')
     print json.dumps(msg)
 
-    _send_unique()
-    _send_3_chatroom()
+    # _send_unique()
+    # _send_3_chatroom()
 
     form_user_name = msg.get('FromUserName')
     # judge is or not me
@@ -157,6 +189,10 @@ def search_friend_by_params(nick_name=None, user_name=None, params={}):
             friend_list.append(friend)
         if params.get('city') and params.get('city') == friend.get('City'):
             friend_list.append(friend)
+        if params.get('nicks') and friend.get('NickName') in params.get('nicks'):
+            friend_list.append(friend)
+        if params.get('users') and friend.get('UserName') in params.get('users'):
+            friend_list.append(friend)
     else:
         return friend_list
 
@@ -190,6 +226,10 @@ def get_chatroom_by_params(nick_name=None, user_name=None, params={}):
         if params.get('admin') and params.get('admin') == chatroom.get('isAdmin'):
             chatroom_list.append(chatroom)
         if params.get('owner') and params.get('owner') == chatroom.get('IsOwner'):
+            chatroom_list.append(chatroom)
+        if params.get('nicks') and chatrooms.get('NickName') in params.get('nicks'):
+            chatroom_list.append(chatroom)
+        if params.get('users') and chatrooms.get('UserName') in params.get('users'):
             chatroom_list.append(chatroom)
     else:
         return chatroom_list
@@ -252,16 +292,19 @@ def reply_by_ai(msg):
         return rely_msg_text
 
 
-def run(is_unique=False):
+def run(is_unique=False, is_debug=False):
     """
     main method enter
+    :param is_unique: is or not unique
+    :param is_debug: is or not debug
     :return: None
     """
     init_work()
-    global IS_UNIQUE
+    global IS_UNIQUE, IS_DEBUG
     IS_UNIQUE = is_unique
+    IS_DEBUG = is_debug
     itchat.auto_login(hotReload=True, enableCmdQR=2)
     itchat.run(True)
 
 if __name__ == "__main__":
-    run(is_unique=False)
+    run(is_unique=False, is_debug=False)
