@@ -245,6 +245,7 @@ def hander_file_msg(msg):
     print '- * ' * 22
     print type(msg)
     print msg.get('Type')
+    print msg
 
 
 def reply_by_ai(msg):
