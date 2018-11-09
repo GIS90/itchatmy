@@ -33,26 +33,32 @@ IS_DEBUG = False
 @itchat.msg_register([TEXT, SHARING, SYSTEM], isGroupChat=True)
 def group_text_reply(msg):
     print json.dumps(msg)
+    print '%s: %s' % (msg.get('ActualNickName'), msg.get('Text'))
 
-    monitor_chats = [u'Me',
+    monitor_chats = [
                      # u'家族群',
-                     # u'宝龙山&amp;保康！.宝龙山&amp;保康',
-                     u'媳妇私房钱专用']
+                     u'宝龙山&amp;保康！.宝龙山&amp;保康',
+                     u'媳妇私房钱'
+                    ]
     chat_id_list = list()
     for chat in monitor_chats:
         if not chat:
             continue
 
         unique_chat = get_chatroom_by_params(nick_name=chat)
+        if not unique_chat:
+            continue
         unique_chat_id = unique_chat.get('UserName')
         chat_id_list.append(unique_chat_id) if unique_chat_id else None
     else:
+        print chat_id_list
         to_user_name = msg.get('ToUserName')
         from_user_name = msg.get('FromUserName')
         is_at = msg.get('isAt') if msg else False
-        if is_at or to_user_name in chat_id_list:
-            _build_group_auto_reply(msg=msg, chat=to_user_name)
-        if IS_DEBUG and from_user_name in chat_id_list:
+        if is_at or from_user_name in chat_id_list:
+            print is_at
+            _build_group_auto_reply(msg=msg, chat=from_user_name)
+        if IS_DEBUG and to_user_name in chat_id_list:
             print '*' * 100
             print IS_DEBUG
             _build_group_auto_reply(msg=msg, chat=to_user_name)
@@ -68,12 +74,13 @@ def _build_group_auto_reply(msg, chat):
     if not msg or not chat:
         return
 
-    form_nick_name = msg.get('ActualNickName')
-    if not form_nick_name:
-        from_user_name = msg.get('FromUserName')
-        from_user = search_friend_by_params(user_name=from_user_name)
-        form_nick_name = from_user.get('NickName')
-    rely_msg_text = '@%s %s' % (form_nick_name, reply_by_ai(msg))
+    to_nick_name = msg.get('ActualNickName')
+    if not to_nick_name:
+        to_user_name = msg.get('ToUserName')
+        to_user = search_friend_by_params(user_name=to_user_name)
+        to_nick_name = to_user.get('NickName')
+    rely_msg_text = '@%s %s' % (to_nick_name, reply_by_ai(msg))
+    print rely_msg_text,chat
     itchat.send(rely_msg_text, toUserName=chat)
 
 
@@ -289,7 +296,7 @@ def reply_by_ai(msg):
             rely_msg_text = "小6好像出问题了, 正在通知主人回来抢修"
     except:
         rely_msg_text = "小6没有找到答案😭😭😭, 尝试换个话题吧"
-    else:
+    finally:
         return rely_msg_text
 
 
